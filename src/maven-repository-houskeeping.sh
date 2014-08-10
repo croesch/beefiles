@@ -7,8 +7,16 @@ MAX_LOG_SIZE=1000000
 
 AGE=31
 
-mv ${LOGFILE} ${TMPLOG}
-tail -n ${MAX_LOG_SIZE} ${TMPLOG} > ${LOGFILE}
+if [ "$#" -eq 1 ]
+then
+  LOGFILE="${1}"
+fi
+
+if [ -f "${LOGFILE}" ]
+then
+  mv ${LOGFILE} ${TMPLOG}
+  tail -n ${MAX_LOG_SIZE} ${TMPLOG} > ${LOGFILE}
+fi
 
 date >> ${LOGFILE}
 echo "------------------------------------------------------------------------" >> ${LOGFILE}
