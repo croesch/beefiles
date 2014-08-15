@@ -23,7 +23,7 @@ echo "------------------------------------------------------------------------" 
 
 if [ -z "${M2_REPO}" ]
 then
-  M2_REPO=$(mvn help:evaluate -Dexpression=settings.localRepository | grep -v '[INFO]')
+  M2_REPO=$(mvn help:evaluate -Dexpression=settings.localRepository | grep -v '[INFO]' | grep -v 'Download')
   echo "M2_REPO was not set, set it to '$M2_REPO'" >> ${LOGFILE}
 fi
 
