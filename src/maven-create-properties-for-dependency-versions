@@ -31,8 +31,8 @@ class PIParser(ET.XMLTreeBuilder):
 
 namespaces = {'ns': 'http://maven.apache.org/POM/4.0.0'}
 
-def getTree(string):
-  return PIParser.parse(string)
+def getIt(string):
+  return string
 
 def find(tag, child):
   return tag.find("ns:" + child, namespaces=namespaces)
@@ -95,13 +95,14 @@ def extractDependencyVersions(pomFile):
     properties.insert(0, versionTag)
 
 parser = argparse.ArgumentParser(description='Create properties for dependency versions in POM file.')
-parser.add_argument('-f', '--file', nargs=1, type=getTree, help='the pom file', required=True)
+parser.add_argument('-f', '--file', nargs=1, type=getIt, help='the pom file', required=True)
 args = parser.parse_args()
 
 ET.register_namespace('', namespaces["ns"])
 
-for i, pomTree in enumerate(args.file):
+for i, file in enumerate(args.file):
+  pomTree = PIParser.parse(file)
   pomFile = pomTree.getroot()
   addPropertiesIfNecessary(pomFile)
   extractDependencyVersions(pomFile)
-  pomTree.write("out.xml")
+  pomTree.write(file)
