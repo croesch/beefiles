@@ -112,6 +112,6 @@ for i, file in enumerate(args.file):
   if containsDependencies(pomFile):
     addPropertiesIfNecessary(pomFile)
     extractDependencyVersions(pomFile)
-    pomTree.write(file)
+    pomTree.write(file, encoding="UTF-8", xml_declaration=True)
   else:
     print("Skipping - no dependencies.")
