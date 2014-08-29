@@ -43,8 +43,14 @@ def iter(tag, child):
 def findProperties(project):
   return find(project, "properties")
 
+def findDependencies(project):
+  return find(project, "dependencies")
+
 def containsProperties(project):
   return not (findProperties(project) is None)
+
+def containsDependencies(project):
+  return not (findDependencies(project) is None)
 
 def addPropertiesIfNecessary(pomFile):
   if containsProperties(pomFile):
@@ -52,7 +58,7 @@ def addPropertiesIfNecessary(pomFile):
   else:
     print("adding <properties> before <dependencies>")
     parent_map = {c: p for p in pomFile.getiterator() for c in p}
-    dependencies = find(pomFile, 'dependencies')
+    dependencies = findDependencies(pomFile)
     index = list(parent_map[dependencies]).index(dependencies)
     properties = ET.SubElement(pomFile, "{" + namespaces["ns"] + "}properties")
     properties.text = "\n    "
@@ -67,7 +73,7 @@ def versionString(artifact):
 def extractDependencyVersions(pomFile):
   versions = {}
 
-  dependencies = find(pomFile, 'dependencies')
+  dependencies = findDependencies(pomFile)
   for dependency_node in iter(dependencies, 'dependency'):
     artifactId = find(dependency_node, 'artifactId').text
     version_node = find(dependency_node, 'version')
@@ -103,6 +109,9 @@ ET.register_namespace('', namespaces["ns"])
 for i, file in enumerate(args.file):
   pomTree = PIParser.parse(file)
   pomFile = pomTree.getroot()
-  addPropertiesIfNecessary(pomFile)
-  extractDependencyVersions(pomFile)
-  pomTree.write(file)
+  if containsDependencies(pomFile):
+    addPropertiesIfNecessary(pomFile)
+    extractDependencyVersions(pomFile)
+    pomTree.write(file)
+  else:
+    print("Skipping - no dependencies.")
