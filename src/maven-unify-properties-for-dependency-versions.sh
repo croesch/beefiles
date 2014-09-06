@@ -70,8 +70,26 @@ def addPropertiesIfNecessary(pomFile):
 def versionString(artifact):
   return artifact + ".version"
 
+def getProperty(project, removedVersions, id):
+  if id in removedVersions:
+    return removedVersions.get(id)
+  else:
+    return find(findProperties(project), id).text
+
+def versionExtracted(indent, versions, artifactId, version, version_node):
+  print("  "*indent + "Extracting {}'s version: {}".format(artifactId, version))
+  if artifactId in versions and versions.get(artifactId) != version:
+    print("[WARNING] Version conflict for artifact " + artifactId)
+    print("  found version " + version)
+    print("  found version " + versions.get(artifactId))
+    print("  -> ignoring current occurrence")
+  else:
+    versions[artifactId] = version
+    version_node.text = "${" + versionString(artifactId) + "}"
+
 def extractDependencyVersions(pomFile):
   versions = {}
+  removedVersions = {}
 
   dependencies = findDependencies(pomFile)
   for dependency_node in iter(dependencies, 'dependency'):
@@ -80,25 +98,43 @@ def extractDependencyVersions(pomFile):
     if not (version_node is None):
       version = version_node.text
       if not version.startswith("$"):
-        print("Extracting {}'s version: {}".format(artifactId, version))
-        if artifactId in versions and versions.get(artifactId) != version:
-          print("[WARNING] Version conflict for artifact " + artifactId)
-          print("  found version " + version)
-          print("  found version " + versions.get(artifactId))
-          print("  -> ignoring current occurrence")
+        versionExtracted(0, versions, artifactId, version, version_node)
+      else:
+        print("{}'s version does start with '$': {}".format(artifactId, version))
+        if version == "${" + versionString(artifactId) + "}":
+          print("  Version string >" + version + "< looks good.") 
+          version = getProperty(pomFile, removedVersions, version[2:-1])
+          versionExtracted(1, versions, artifactId, version, version_node)
         else:
-          versions[artifactId] = version
-          version_node.text = "${" + versionString(artifactId) + "}"
-#      else:
-#        print("{}'s version does start with '$': {}".format(artifactId, version))
-  properties = find(pomFile, 'properties')
+          badVersion = version[2:-1]
+          print("  Version string >" + version + "< is going to be replaced!")
+          version = getProperty(pomFile, removedVersions, badVersion)
+          versionExtracted(1, versions, artifactId, version, version_node)
+          if badVersion in removedVersions:
+            print("  already removed.")
+          else:
+            print("  removed.")
+            props = findProperties(pomFile)
+            props.remove(find(props, badVersion))
+            removedVersions[badVersion] = version
+  print("Writing properties.")
+  properties = findProperties(pomFile)
   for foundArtifact in versions:
-    versionTag = ET.SubElement(properties, versionString(foundArtifact))
-    versionTag.text = versions[foundArtifact]
-    versionTag.tail = "\n    "
-    # move to correct position
-    properties.remove(versionTag)
-    properties.insert(0, versionTag)
+    existingPropertyNode = find(properties, versionString(foundArtifact))
+    if not (existingPropertyNode is None):
+      if existingPropertyNode.text != versions[foundArtifact]:
+        print("  [WARN] Conflicting versions for " + foundArtifact)
+        print("    contains >" + existingPropertyNode.text + "<")
+        print("    extracted >" + versions[foundArtifact] + "<")
+      else:
+        print("  Versions exists for " + foundArtifact)
+    else:
+      versionTag = ET.SubElement(properties, versionString(foundArtifact))
+      versionTag.text = versions[foundArtifact]
+      versionTag.tail = "\n    "
+      # move to correct position
+      properties.remove(versionTag)
+      properties.insert(0, versionTag)
 
 parser = argparse.ArgumentParser(description='Create properties for dependency versions in POM file.')
 parser.add_argument('-f', '--file', nargs=1, type=getIt, help='the pom file', required=True)
