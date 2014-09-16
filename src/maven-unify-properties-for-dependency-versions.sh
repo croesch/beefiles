@@ -44,7 +44,15 @@ def findProperties(project):
   return find(project, "properties")
 
 def findDependencies(project):
-  return find(project, "dependencies")
+  dependencies = find(project, "dependencies")
+  if dependencies is None:
+    dependencyManagement = find(project, "dependencyManagement")
+    if dependencyManagement is None:
+      return dependencyManagement
+    else:
+      return find(dependencyManagement, "dependencies")
+  else:
+    return dependencies
 
 def containsProperties(project):
   return not (findProperties(project) is None)
