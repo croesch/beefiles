@@ -21,6 +21,8 @@ do
   rsync -a --remove-source-files "${file}" "${target}"
   echo -n "."
   jpegoptim -q "${target}${filename}"
+  # temporary fix for file rights
+  chmod g+rw "${target}${filename}"
   echo "done."
 done
 
@@ -35,6 +37,8 @@ do
   mkdir -p "${target}"
   echo -n "."
   rsync -a --remove-source-files "${file}" "${target}"
+  # temporary fix for file rights
+  chmod g+rw "${target}${filename}"
   echo "done."
 done
 
