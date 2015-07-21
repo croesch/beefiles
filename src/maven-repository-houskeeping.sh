@@ -5,7 +5,7 @@ LOGFILE="/var/log/${LOGNAME}"
 TMPLOG="/tmp/${LOGNAME}"
 MAX_LOG_SIZE=1000000
 
-AGE=31
+AGE=100
 
 if [ "$#" -eq 1 ]
 then
