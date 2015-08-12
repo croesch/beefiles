@@ -1,4 +1,5 @@
 #!/bin/bash
+PATH_TO_PICTURES="/data/christian/seafile/Seafile/Unsere Fotos"
 
 if [ "$#" -lt 1 ]
 then
@@ -15,7 +16,7 @@ do
   datetaken=$(exiftool -s3 '-CreateDate' -d '%Y-%m-%d' "${file}")
   yeartaken=$(exiftool -s3 '-CreateDate' -d '%Y' "${file}")
   filename=$(basename "${file}")
-  target="${HOME}/Pictures/${yeartaken}/${datetaken}/"
+  target="${PATH_TO_PICTURES}/${yeartaken}/${datetaken}/"
   mkdir -p "${target}"
   echo -n "."
   rsync -a --remove-source-files "${file}" "${target}"
@@ -33,7 +34,7 @@ do
   datetaken=$(exiftool -s3 '-CreateDate' -d '%Y-%m-%d' "${file}")
   yeartaken=$(exiftool -s3 '-CreateDate' -d '%Y' "${file}")
   filename=$(basename "${file}")
-  target="${HOME}/Pictures/${yeartaken}/${datetaken}/videos/"
+  target="${PATH_TO_PICTURES}/${yeartaken}/${datetaken}/videos/"
   mkdir -p "${target}"
   echo -n "."
   rsync -a --remove-source-files "${file}" "${target}"
