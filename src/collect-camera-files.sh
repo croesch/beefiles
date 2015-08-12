@@ -19,7 +19,7 @@ do
   target="${PATH_TO_PICTURES}/${yeartaken}/${datetaken}/"
   mkdir -p "${target}"
   echo -n "."
-  rsync -a --remove-source-files "${file}" "${target}"
+  rsync --remove-source-files "${file}" "${target}"
   echo -n "."
   jpegoptim -q "${target}${filename}"
   # temporary fix for file rights
@@ -37,7 +37,7 @@ do
   target="${PATH_TO_PICTURES}/${yeartaken}/${datetaken}/videos/"
   mkdir -p "${target}"
   echo -n "."
-  rsync -a --remove-source-files "${file}" "${target}"
+  rsync --remove-source-files "${file}" "${target}"
   # temporary fix for file rights
   chmod g+rw "${target}${filename}"
   echo "done."
