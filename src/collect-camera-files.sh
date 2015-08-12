@@ -1,5 +1,6 @@
 #!/bin/bash
 PATH_TO_PICTURES="/data/christian/seafile/Seafile/Unsere Fotos"
+PATH_TO_RAWS="/data/christian/seafile/Seafile/raws"
 
 if [ "$#" -lt 1 ]
 then
@@ -22,6 +23,20 @@ do
   rsync --remove-source-files "${file}" "${target}"
   echo -n "."
   jpegoptim -q "${target}${filename}"
+  # temporary fix for file rights
+  chmod g+rw "${target}${filename}"
+  echo "done."
+done
+
+find "${CAMERA}/DCIM/" -type f -iregex .*\.arw |
+while read file
+do
+  echo -n "${file} "
+  filename=$(basename "${file}")
+  target="${PATH_TO_RAWS}/"
+  echo -n "."
+  rsync --remove-source-files "${file}" "${target}"
+  echo -n "."
   # temporary fix for file rights
   chmod g+rw "${target}${filename}"
   echo "done."
