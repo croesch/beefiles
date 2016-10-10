@@ -1,6 +1,6 @@
 #!/bin/bash
 
-for repo in `find / -type d -name .git 2> /dev/null`
+for repo in `find . -type d -name .git 2> /dev/null`
 do
   echo -n "Adding user to ${repo}.. "
   repoConfig="${repo}/config"
