@@ -22,4 +22,10 @@ fi
 find -L "${M2_REPO}" -name '*jar' -atime +${AGE} -exec rm -rfv {} \; >> ${LOGFILE}
 find -L "${M2_REPO}" -name '*swf' -atime +${AGE} -exec rm -rfv {} \; >> ${LOGFILE}
 find -L "${M2_REPO}" -name '*swc' -atime +${AGE} -exec rm -rfv {} \; >> ${LOGFILE}
+find -L "${M2_REPO}" -name '*sha1' -atime +${AGE} -exec rm -rfv {} \; >> ${LOGFILE}
+find -L "${M2_REPO}" -name '*md5' -atime +${AGE} -exec rm -rfv {} \; >> ${LOGFILE}
+find -L "${M2_REPO}" -name '*pom' -atime +${AGE} -exec rm -rfv {} \; >> ${LOGFILE}
+find -L "${M2_REPO}" -name '*repositories' -atime +${AGE} -exec rm -rfv {} \; >> ${LOGFILE}
+find -L "${M2_REPO}" -name '*properties' -atime +${AGE} -exec rm -rfv {} \; >> ${LOGFILE}
+find -L "${M2_REPO}" -empty -type d -delete >> ${LOGFILE}
 echo >> ${LOGFILE}
