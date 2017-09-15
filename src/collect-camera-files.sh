@@ -1,6 +1,4 @@
 #!/bin/bash
-PATH_TO_PICTURES="/data/christian/seafile/Seafile/Unsere Fotos"
-PATH_TO_RAWS="/data/christian/seafile/Seafile/raws"
 
 if [ "$#" -lt 1 ]
 then
