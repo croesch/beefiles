@@ -64,3 +64,27 @@ do
   echo "removed."
 done
 
+
+find "${CAMERA}/PRIVATE/" -type f -iregex .*\.mts |
+while read file
+do
+  echo -n "${file} "
+  datetaken=$(exiftool -s3 '-DateTimeOriginal' -d '%Y-%m-%d' "${file}")
+  yeartaken=$(exiftool -s3 '-DateTimeOriginal' -d '%Y' "${file}")
+  filename=$(basename "${file}")
+  target="${PATH_TO_PICTURES}/${yeartaken}/${datetaken}/videos/"
+  mkdir -p "${target}"
+  echo -n "."
+  rsync --remove-source-files "${file}" "${target}"
+  # temporary fix for file rights
+  chmod g+rw "${target}${filename}"
+  echo "done."
+done
+
+find "${CAMERA}/PRIVATE/" -type f -iregex .*\.cpi |
+while read file
+do
+  echo -n "${file} "
+  rm "${file}"
+  echo "removed."
+done
