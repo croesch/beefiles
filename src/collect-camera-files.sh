@@ -8,6 +8,10 @@ else
   CAMERA="${1}"
 fi
 
+if [ -f ~/.bash_env ]; then
+    source ~/.bash_env
+fi
+
 find "${CAMERA}/DCIM/" -type f -iregex .*\.jpe?g |
 while read file
 do
