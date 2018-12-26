@@ -6,10 +6,6 @@ then
   exit 1
 fi
 
-if [ -f ~/.bash_env ]; then
-    source ~/.bash_env
-fi
-
 __move_file_to_destination () {
   rsync --remove-source-files "${1}" "${2}"
   echo -n "."
