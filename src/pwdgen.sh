@@ -1,6 +1,7 @@
 #!/bin/bash
-apg -a 1 -M SNCL -m 20 -n 10
+pwgen -sncy 27 10
 
 echo
-echo "Without \\'\`\""
-apg -a 1 -M SNCL -m 20 -n 10 -E \\\'\`\"
+echo "Without special characters"
+echo
+pwgen -snc 27 10
