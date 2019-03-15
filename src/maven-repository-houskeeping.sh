@@ -3,7 +3,7 @@
 LOGNAME=maven-housekeeping.log
 LOGFILE="/var/log/${LOGNAME}"
 
-AGE=365
+AGE=36
 
 if [ "$#" -eq 1 ]
 then
