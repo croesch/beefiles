@@ -47,11 +47,6 @@ for i, file in enumerate(args.file):
   group = args.group[0]
   artifact = args.artifact[0]
 
-  projectVersion = maven_evaluate(file,"project.version")
-  if not projectVersion.endswith("-SNAPSHOT"):
-    print("project version is not SNAPSHOT: " + projectVersion)
-    continue
-
   parentGroup = maven_evaluate(file,"project.parent.groupId")
   if parentGroup != group:
     print("parent group not matching")
@@ -62,6 +57,11 @@ for i, file in enumerate(args.file):
     continue
 
   if maven_update_parent(file, newParentMajor):
+    projectVersion = maven_evaluate(file,"project.version")
+    if not projectVersion.endswith("-SNAPSHOT"):
+      print("project version is not SNAPSHOT: " + projectVersion)
+      continue
+
     if projectVersion.endswith(".0.0-SNAPSHOT"):
       print("Current version is already a new major version: " + projectVersion)
     else:
