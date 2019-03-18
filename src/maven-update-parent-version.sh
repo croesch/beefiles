@@ -20,6 +20,9 @@ def maven_update_parent(file,newParentMajor):
   
   if oldParentVersion != newParentVersion:
     print(oldParentVersion + " -> " + newParentVersion, end=' -- ', flush=True)
+    if oldParentVersion.startswith(newParentMajor + "."):
+      print("No major update necessary.")
+      return False
     return True
   else:
     print("unchanged")
