@@ -50,8 +50,8 @@ __collect_movies () {
   while read file
   do
     echo -n "${file} "
-    datetaken=$(exiftool -s3 '-CreateDate' -d '%Y-%m-%d' "${file}")
-    yeartaken=$(exiftool -s3 '-CreateDate' -d '%Y' "${file}")
+    datetaken=$(exiftool -s3 '-DateTimeOriginal' -d '%Y-%m-%d' "${file}")
+    yeartaken=$(exiftool -s3 '-DateTimeOriginal' -d '%Y' "${file}")
     filename=$(basename "${file}")
     target="${PATH_TO_PICTURES}/${yeartaken}/${datetaken}/videos/"
     mkdir -p "${target}"
