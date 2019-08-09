@@ -1,0 +1,7 @@
+sudo: false
+language: bash
+addons:
+  apt:
+    packages:
+    - bats
+script: bats test
