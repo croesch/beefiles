@@ -124,6 +124,25 @@ function git_merge_branches() {
   done
 }
 
+function git_merge_tags() {
+  RESULT_REPO=`_target "${1}"`
+  origin_remote=`basename "${2#*:}"`
+  merge_remote=`basename "${3#*:}"`
+  for tag in `git_tags_in_both "${1}" origin "${merge_remote}"`
+  do
+    origin_id="$(git -C "${RESULT_REPO}" ls-remote --refs --tags origin "${tag}" | cut -f -1)"
+    merge_id="$(git -C "${RESULT_REPO}" ls-remote --refs --tags "${merge_remote}" "${tag}" | cut -f -1)"
+    echo "Tagging ${origin_id} as '${tag}-${origin_remote}'"
+    git -C "${RESULT_REPO}" tag "${tag}-${origin_remote}" "${origin_id}" || return 1
+    echo "Tagging ${merge_id} as '${tag}-${merge_remote}'"
+    git -C "${RESULT_REPO}" tag "${tag}-${merge_remote}" "${merge_id}" || return 2
+    echo "Merging ${tag}"
+    git -C "${RESULT_REPO}" checkout "${origin_id}" || return 3
+    git -C "${RESULT_REPO}" merge --allow-unrelated-histories --no-edit -s recursive -X patience "${merge_id}" || ask_user "Merge failed, solve conflicts now." || return 4
+    git -C "${RESULT_REPO}" tag -f "${tag}" || return 5
+  done
+}
+
 # return here if we are sourcing this script
 [[ "${BASH_SOURCE[0]}" != "${0}" ]] && return 0
 
@@ -135,9 +154,8 @@ MERGED_REPO="${2}"
 git_clone "${TARGET_REPO}" "${WORK_DIR}" || exit_on_error "Clone failed." 1
 git_add_remote_and_fetch "${WORK_DIR}" "${MERGED_REPO}" || exit_on_error "Adding remote failed." 2
 git_merge_branches "${WORK_DIR}" "${MERGED_REPO}" || exit_on_error "Merging branches failed." 3
+git_merge_tags "${WORK_DIR}" "${TARGET_REPO}" "${MERGED_REPO}" || exit_on_error "Merging tags failed." 4
 # TODO
-# 2. Create unique tags for tags that exist in both repos
-# 3. Create merge commits for tags that exist in both repos and move the old ones
 # 4. Review and push all the changes
 
 echo "Result can be found under ${RESULT_REPO}"

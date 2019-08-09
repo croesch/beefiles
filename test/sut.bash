@@ -72,7 +72,6 @@ function prepare_example_repo_two() {
   git branch only-in-two
   git add twenty/three
   git commit -qm "Add twenty-three."
-  git tag tag-two
 
   git checkout -q dev
   git add twenty/four
@@ -81,4 +80,5 @@ function prepare_example_repo_two() {
   git checkout -q only-in-two
   git add five
   git commit -qm "Add five."
+  git tag tag-two
 }

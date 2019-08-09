@@ -236,3 +236,55 @@ teardown() {
 
   [ "${files_on_branch}" = "one"$'\n'"twenty/three"$'\n'"twenty/two"$'\n'"two" ]
 }
+
+@test "${SUT}: merge tags - should merge all duplicate tags" {
+  init_git1
+  init_git2
+
+  git clone -q "${GIT1}" "${WORK}/target"
+  git -C "${WORK}/target" remote add git2 "${GIT2}"
+  git -C "${WORK}/target" fetch -q git2 2> /dev/null
+
+  git1_id="$(git -C "${WORK}/target" ls-remote --refs --tags origin "tag-two" | cut -f -1)"
+  git2_id="$(git -C "${WORK}/target" ls-remote --refs --tags git2 "tag-two" | cut -f -1)"
+
+  run git_merge_tags "${WORK}" "${GIT1}" "${GIT2}"
+
+  [[ "$status" -eq 0 ]]
+  [[ "${output}" =~ "Tagging ${git1_id} as 'tag-two-git1'" ]]
+  [[ "${output}" =~ "Tagging ${git2_id} as 'tag-two-git2'" ]]
+
+  tags="$(git -C "${WORK}/target" tag -l)"
+
+  [[ "${tags}" =~ "tag-two" ]]
+  [[ "${tags}" =~ "tag-two-git1" ]]
+  [[ "${tags}" =~ "tag-two-git2" ]]
+
+  git -C "${WORK}/target" checkout -q tag-two
+  files_in_tag="$(git -C "${WORK}/target" ls-files)"
+
+  [ "${files_in_tag}" = "five"$'\n'"one"$'\n'"ten/four"$'\n'"twenty/two" ]
+
+  [ "$(git -C "${WORK}/target" show-ref -s tag-two-git1)" = "${git1_id}" ]
+  [ "$(git -C "${WORK}/target" show-ref -s tag-two-git2)" = "${git2_id}" ]
+}
+
+@test "${SUT}: merge tags - should add all unique tags" {
+  init_git1
+  init_git2
+
+  git clone -q "${GIT1}" "${WORK}/target"
+  git -C "${WORK}/target" remote add git2 "${GIT2}"
+  git -C "${WORK}/target" fetch -q git2 2> /dev/null
+
+  git2_tag_three_id="$(git -C "${WORK}/target" ls-remote --refs --tags git2 "tag-three" | cut -f -1)"
+
+  run git_merge_tags "${WORK}" "${GIT1}" "${GIT2}"
+
+  [[ "$status" -eq 0 ]]
+
+  tags="$(git -C "${WORK}/target" tag -l)"
+
+  [[ "${tags}" =~ "tag-three" ]]
+  [ "$(git -C "${WORK}/target" show-ref -s tag-three)" = "${git2_tag_three_id}" ]
+}
