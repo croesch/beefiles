@@ -128,14 +128,47 @@ function git_merge_tags() {
   RESULT_REPO=`_target "${1}"`
   origin_remote=`basename "${2#*:}"`
   merge_remote=`basename "${3#*:}"`
+
+  declare -A origin_tags
+  declare -A merge_tags
+
+  IFS=$'\n'
+
+  echo "Storing tags of ${origin_remote} into map"
+  for tag in `git -C "${RESULT_REPO}" ls-remote --refs --tags origin`
+  do
+    id="$(echo "${tag}" | cut -f -1)"
+    name="$(echo "${tag}" | cut -f 2-)"
+    origin_tags[${name}]="${id}"
+  done
+
+  echo "Storing tags of ${merge_remote} into map"
+  for tag in `git -C "${RESULT_REPO}" ls-remote --refs --tags "${merge_remote}"`
+  do
+    id="$(echo "${tag}" | cut -f -1)"
+    name="$(echo "${tag}" | cut -f 2-)"
+    merge_tags[${name}]="${id}"
+  done
+
+  echo "Starting to merge tags"
   for tag in `git_tags_in_both "${1}" origin "${merge_remote}"`
   do
-    origin_id="$(git -C "${RESULT_REPO}" ls-remote --refs --tags origin "${tag}" | cut -f -1)"
-    merge_id="$(git -C "${RESULT_REPO}" ls-remote --refs --tags "${merge_remote}" "${tag}" | cut -f -1)"
+    origin_id="${origin_tags[refs/tags/$tag]}"
+    merge_id="${merge_tags[refs/tags/$tag]}"
+    if [ "${origin_id}" = "${merge_id}" ]
+    then
+      echo "Tags ${tag} point both to '${origin_id}'."
+      continue
+    fi
     echo "Tagging ${origin_id} as '${tag}-${origin_remote}'"
     git -C "${RESULT_REPO}" tag "${tag}-${origin_remote}" "${origin_id}" || return 1
     echo "Tagging ${merge_id} as '${tag}-${merge_remote}'"
-    git -C "${RESULT_REPO}" tag "${tag}-${merge_remote}" "${merge_id}" || return 2
+    git -C "${RESULT_REPO}" tag "${tag}-${merge_remote}" "${merge_id}"
+    if [ ! $? -eq 0 ]
+    then
+      git -C "${RESULT_REPO}" fetch "${merge_remote}" "${merge_id}"
+      git -C "${RESULT_REPO}" tag "${tag}-${merge_remote}" "${merge_id}" || return 2
+    fi
     echo "Merging ${tag}"
     git -C "${RESULT_REPO}" checkout "${origin_id}" || return 3
     git -C "${RESULT_REPO}" merge --allow-unrelated-histories --no-edit -s recursive -X patience "${merge_id}" || ask_user "Merge failed, solve conflicts now." || return 4
@@ -150,12 +183,26 @@ WORK_DIR=`mktemp -d`
 
 TARGET_REPO="${1}"
 MERGED_REPO="${2}"
+RESULT_REPO=`_target "${1}"`
 
 git_clone "${TARGET_REPO}" "${WORK_DIR}" || exit_on_error "Clone failed." 1
 git_add_remote_and_fetch "${WORK_DIR}" "${MERGED_REPO}" || exit_on_error "Adding remote failed." 2
 git_merge_branches "${WORK_DIR}" "${MERGED_REPO}" || exit_on_error "Merging branches failed." 3
 git_merge_tags "${WORK_DIR}" "${TARGET_REPO}" "${MERGED_REPO}" || exit_on_error "Merging tags failed." 4
-# TODO
-# 4. Review and push all the changes
 
+echo "========================================="
 echo "Result can be found under ${RESULT_REPO}"
+echo "========================================="
+echo "Simulating push.."
+
+echo "Pushing branches.."
+git -C "${RESULT_REPO}" push --all --dry-run
+echo "Pushing tags.."
+git -C "${RESULT_REPO}" push --tags -f --dry-run
+
+ask_user "Review the changes carefully and continue to push them." || exit_on_error "Review unsuccessful" 5
+
+echo "Pushing branches.."
+git -C "${RESULT_REPO}" push --all --dry-run
+echo "Pushing tags.."
+git -C "${RESULT_REPO}" push --tags -f --dry-run
