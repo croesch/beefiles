@@ -203,6 +203,6 @@ git -C "${RESULT_REPO}" push --tags -f --dry-run
 ask_user "Review the changes carefully and continue to push them." || exit_on_error "Review unsuccessful" 5
 
 echo "Pushing branches.."
-git -C "${RESULT_REPO}" push --all --dry-run
+git -C "${RESULT_REPO}" push --all
 echo "Pushing tags.."
-git -C "${RESULT_REPO}" push --tags -f --dry-run
+git -C "${RESULT_REPO}" push --tags -f
