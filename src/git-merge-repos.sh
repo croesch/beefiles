@@ -1,6 +1,7 @@
 #!/bin/bash
 
 RED='\033[0;31m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 function _target() {
@@ -36,9 +37,27 @@ function git_list_remote_branches() {
   git -C "${target}" for-each-ref --format="%(refname)" refs/remotes/${2}
 }
 
+function git_list_remote_tags() {
+  target=`_target "${1}"`
+
+  # return tags without sha1 (cut) and without peeled tags (--refs)
+  git -C "${target}" ls-remote --refs --tags ${2} | cut -f 2-
+}
+
 function contains_item() {
   # https://stackoverflow.com/questions/8063228/how-do-i-check-if-a-variable-exists-in-a-list-in-bash
   [[ $1 =~ (^|[[:space:]])$2($|[[:space:]]) ]]
+}
+
+function git_tags_in_both() {
+  compare_tags="$(git_list_remote_tags "${1}" "${2}")"
+  for tag in `git_list_remote_tags "${1}" "${3}"`
+  do
+    if [[ "${compare_tags}" =~ "${tag}" ]]
+    then
+      echo "${tag#refs/tags/}"
+    fi
+  done
 }
 
 function git_branches_in_both() {
@@ -65,6 +84,46 @@ function git_branches_not_known() {
   done
 }
 
+function ask_user() {
+  while true
+  do
+    echo -e "${BLUE}${1} Solve the task first on another console and continue afterwards..${NC}"
+    read -p "Can continue? (y/n) " answer
+
+    case $answer in
+     [yY]* ) echo "Going to continue.."
+             break;;
+
+     [nN]* ) return 1;;
+
+     * )     echo "Just enter Y or N, please.";;
+    esac
+  done
+}
+
+function git_merge_branches() {
+  RESULT_REPO=`_target "${1}"`
+  MERGE_REMOTE=`basename "${2#*:}"`
+  # FIXME consider the git command to fail
+  for new_branch in `git_branches_not_known "${1}" "origin" "${MERGE_REMOTE}"`
+  do
+    git -C "${RESULT_REPO}" branch "${new_branch}" "refs/remotes/${MERGE_REMOTE}/${new_branch}" || return 1
+  done
+
+  local_branches="$(git -C "${RESULT_REPO}" for-each-ref --format="%(refname)" refs/heads/)"
+
+  # 1. Merge all branches that exist in both repos
+  for new_branch in `git_branches_in_both "${1}" "origin" "${MERGE_REMOTE}"`
+  do
+    if [[ ! "${new_branches}" =~ "refs/heads/${new_branch}" ]]
+    then
+      git -C "${RESULT_REPO}" branch "${new_branch}" "refs/remotes/origin/${new_branch}" || ask_user "Branching ${new_branch} based on 'refs/remotes/origin/${new_branch}' failed, make sure branch exists." || return 2
+    fi
+    git -C "${RESULT_REPO}" checkout "${new_branch}" || ask_user "Checkout failed, ensure to checkout ${new_branch}." || return 3
+    git -C "${RESULT_REPO}" merge --allow-unrelated-histories --no-edit -s recursive -X patience "refs/remotes/${MERGE_REMOTE}/${new_branch}" || ask_user "Merge failed, solve conflicts now." || return 4
+  done
+}
+
 # return here if we are sourcing this script
 [[ "${BASH_SOURCE[0]}" != "${0}" ]] && return 0
 
@@ -75,16 +134,8 @@ MERGED_REPO="${2}"
 
 git_clone "${TARGET_REPO}" "${WORK_DIR}" || exit_on_error "Clone failed." 1
 git_add_remote_and_fetch "${WORK_DIR}" "${MERGED_REPO}" || exit_on_error "Adding remote failed." 2
-RESULT_REPO=`_target "${WORK_DIR}"`
-MERGE_REMOTE=`basename "${MERGED_REPO#*:}"`
-# FIXME consider the git command to fail
-for new_branch in `git_branches_not_known "${WORK_DIR}" "origin" "${MERGE_REMOTE}"`
-do
-  # FIXME consider the git command to fail
-  git -C "${RESULT_REPO}" branch "${new_branch}" "refs/remotes/${MERGE_REMOTE}/${new_branch}"
-done
+git_merge_branches "${WORK_DIR}" "${MERGED_REPO}" || exit_on_error "Merging branches failed." 3
 # TODO
-# 1. Merge all branches that exist in both repos
 # 2. Create unique tags for tags that exist in both repos
 # 3. Create merge commits for tags that exist in both repos and move the old ones
 # 4. Review and push all the changes
