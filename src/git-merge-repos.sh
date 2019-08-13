@@ -124,6 +124,28 @@ function git_merge_branches() {
   done
 }
 
+function git_utag() {
+  local commit_id="${1}"
+  local tag="${2}"
+  local remote="${3}"
+  local repo="${4}"
+  local suffix=0
+
+  while [ -v $5[refs/tags/$tag] ]
+  do
+    echo "Tag '$tag' exists already"
+    suffix=$((suffix+1))
+    tag="${2}-${suffix}"
+  done
+  echo "Tagging ${commit_id} as '${tag}'"
+  git -C "${repo}" tag "${tag}" "${commit_id}"
+  if [ ! $? -eq 0 ]
+  then
+    git -C "${repo}" fetch "${remote}" "${commit_id}"
+    git -C "${repo}" tag "${tag}" "${commit_id}" || return 1
+  fi
+}
+
 function git_merge_tags() {
   RESULT_REPO=`_target "${1}"`
   origin_remote=`basename "${2#*:}"`
@@ -160,17 +182,10 @@ function git_merge_tags() {
       echo "Tags ${tag} point both to '${origin_id}'."
       continue
     fi
-    echo "Tagging ${origin_id} as '${tag}-${origin_remote}'"
-    git -C "${RESULT_REPO}" tag "${tag}-${origin_remote}" "${origin_id}" || return 1
-    echo "Tagging ${merge_id} as '${tag}-${merge_remote}'"
-    git -C "${RESULT_REPO}" tag "${tag}-${merge_remote}" "${merge_id}"
-    if [ ! $? -eq 0 ]
-    then
-      git -C "${RESULT_REPO}" fetch "${merge_remote}" "${merge_id}"
-      git -C "${RESULT_REPO}" tag "${tag}-${merge_remote}" "${merge_id}" || return 2
-    fi
+    git_utag "${origin_id}" "${tag}-${origin_remote}" "origin" "${RESULT_REPO}" origin_tags || return 1
+    git_utag "${merge_id}" "${tag}-${merge_remote}" "${merge_remote}" "${RESULT_REPO}" merge_tags || return 2
     echo "Merging ${tag}"
-    git -C "${RESULT_REPO}" checkout "${origin_id}" || return 3
+    git -C "${RESULT_REPO}" checkout --detach "${origin_id}" || return 3
     git -C "${RESULT_REPO}" merge --allow-unrelated-histories --no-edit -s recursive -X patience "${merge_id}" || ask_user "Merge failed, solve conflicts now." || return 4
     git -C "${RESULT_REPO}" tag -f "${tag}" || return 5
   done

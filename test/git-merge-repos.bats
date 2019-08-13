@@ -289,6 +289,120 @@ teardown() {
   [ "$(git -C "${WORK}/target" show-ref -s tag-two-git2)" = "${git2_id}" ]
 }
 
+@test "${SUT}: merge tags - should create unique tag if new tag exists in origin" {
+  init_git1
+  init_git2
+
+  # create tag so that creating unique tag will create conflict
+  git -C "${GIT1}" tag tag-two-git1 master
+
+  git clone -q "${GIT1}" "${WORK}/target"
+  git -C "${WORK}/target" remote add git2 "${GIT2}"
+  git -C "${WORK}/target" fetch -q git2 2> /dev/null
+
+  git1_id="$(git -C "${WORK}/target" ls-remote --refs --tags origin "tag-two" | cut -f -1)"
+  conflict_id="$(git -C "${WORK}/target" ls-remote --refs --tags origin "tag-two-git1" | cut -f -1)"
+  git2_id="$(git -C "${WORK}/target" ls-remote --refs --tags git2 "tag-two" | cut -f -1)"
+
+  run git_merge_tags "${WORK}" "${GIT1}" "${GIT2}"
+
+  [[ "$status" -eq 0 ]]
+  [[ "${output}" =~ "Tagging ${git1_id} as 'tag-two-git1-1'" ]]
+  [[ "${output}" =~ "Tag 'tag-two-git1' exists already" ]]
+  [[ "${output}" =~ "Tagging ${git2_id} as 'tag-two-git2'" ]]
+
+  tags="$(git -C "${WORK}/target" tag -l)"
+
+  [[ "${tags}" =~ "tag-two" ]]
+  [[ "${tags}" =~ "tag-two-git1" ]]
+  [[ "${tags}" =~ "tag-two-git1-1" ]]
+  [[ "${tags}" =~ "tag-two-git2" ]]
+
+  [ "$(git -C "${WORK}/target" show-ref -s tag-two-git1-1)" = "${git1_id}" ]
+  [ "$(git -C "${WORK}/target" show-ref -s tag-two-git1)" = "${conflict_id}" ]
+  [ "$(git -C "${WORK}/target" show-ref -s tag-two-git2)" = "${git2_id}" ]
+}
+
+@test "${SUT}: merge tags - should create unique tag if new tag exists in merge repo" {
+  init_git1
+  init_git2
+
+  # create tag so that creating unique tag will create conflict
+  git -C "${GIT2}" tag tag-two-git2 master
+
+  git clone -q "${GIT1}" "${WORK}/target"
+  git -C "${WORK}/target" remote add git2 "${GIT2}"
+  git -C "${WORK}/target" fetch -q git2 2> /dev/null
+
+  git1_id="$(git -C "${WORK}/target" ls-remote --refs --tags origin "tag-two" | cut -f -1)"
+  conflict_id="$(git -C "${WORK}/target" ls-remote --refs --tags git2 "tag-two-git2" | cut -f -1)"
+  git2_id="$(git -C "${WORK}/target" ls-remote --refs --tags git2 "tag-two" | cut -f -1)"
+
+  run git_merge_tags "${WORK}" "${GIT1}" "${GIT2}"
+
+  [[ "$status" -eq 0 ]]
+  [[ "${output}" =~ "Tagging ${git1_id} as 'tag-two-git1'" ]]
+  [[ "${output}" =~ "Tag 'tag-two-git2' exists already" ]]
+  [[ "${output}" =~ "Tagging ${git2_id} as 'tag-two-git2-1'" ]]
+
+  tags="$(git -C "${WORK}/target" tag -l)"
+
+  [[ "${tags}" =~ "tag-two" ]]
+  [[ "${tags}" =~ "tag-two-git1" ]]
+  [[ "${tags}" =~ "tag-two-git2-1" ]]
+  [[ "${tags}" =~ "tag-two-git2" ]]
+
+  [ "$(git -C "${WORK}/target" show-ref -s tag-two-git1)" = "${git1_id}" ]
+  [ "$(git -C "${WORK}/target" show-ref -s tag-two-git2)" = "${conflict_id}" ]
+  [ "$(git -C "${WORK}/target" show-ref -s tag-two-git2-1)" = "${git2_id}" ]
+}
+
+@test "${SUT}: merge tags - should create unique tag with next free integer" {
+  init_git1
+  init_git2
+
+  # create tag so that creating unique tag will create conflict
+  git -C "${GIT1}" tag tag-two-git1 master
+  git -C "${GIT1}" tag tag-two-git1-1 master
+  git -C "${GIT1}" tag tag-two-git1-2 master
+  git -C "${GIT1}" tag tag-two-git1-3 master
+
+  git clone -q "${GIT1}" "${WORK}/target"
+  git -C "${WORK}/target" remote add git2 "${GIT2}"
+  git -C "${WORK}/target" fetch -q git2 2> /dev/null
+
+  git1_id="$(git -C "${WORK}/target" ls-remote --refs --tags origin "tag-two" | cut -f -1)"
+  conflict_id="$(git -C "${WORK}/target" ls-remote --refs --tags origin "tag-two-git1" | cut -f -1)"
+  git2_id="$(git -C "${WORK}/target" ls-remote --refs --tags git2 "tag-two" | cut -f -1)"
+
+  run git_merge_tags "${WORK}" "${GIT1}" "${GIT2}"
+
+  [[ "$status" -eq 0 ]]
+  [[ "${output}" =~ "Tagging ${git1_id} as 'tag-two-git1-4'" ]]
+  [[ "${output}" =~ "Tag 'tag-two-git1' exists already" ]]
+  [[ "${output}" =~ "Tag 'tag-two-git1-1' exists already" ]]
+  [[ "${output}" =~ "Tag 'tag-two-git1-2' exists already" ]]
+  [[ "${output}" =~ "Tag 'tag-two-git1-3' exists already" ]]
+  [[ "${output}" =~ "Tagging ${git2_id} as 'tag-two-git2'" ]]
+
+  tags="$(git -C "${WORK}/target" tag -l)"
+
+  [[ "${tags}" =~ "tag-two" ]]
+  [[ "${tags}" =~ "tag-two-git1" ]]
+  [[ "${tags}" =~ "tag-two-git1-1" ]]
+  [[ "${tags}" =~ "tag-two-git1-2" ]]
+  [[ "${tags}" =~ "tag-two-git1-3" ]]
+  [[ "${tags}" =~ "tag-two-git1-4" ]]
+  [[ "${tags}" =~ "tag-two-git2" ]]
+
+  [ "$(git -C "${WORK}/target" show-ref -s tag-two-git1)" = "${conflict_id}" ]
+  [ "$(git -C "${WORK}/target" show-ref -s tag-two-git1-1)" = "${conflict_id}" ]
+  [ "$(git -C "${WORK}/target" show-ref -s tag-two-git1-2)" = "${conflict_id}" ]
+  [ "$(git -C "${WORK}/target" show-ref -s tag-two-git1-3)" = "${conflict_id}" ]
+  [ "$(git -C "${WORK}/target" show-ref -s tag-two-git1-4)" = "${git1_id}" ]
+  [ "$(git -C "${WORK}/target" show-ref -s tag-two-git2)" = "${git2_id}" ]
+}
+
 @test "${SUT}: merge tags - should add all unique tags" {
   init_git1
   init_git2
