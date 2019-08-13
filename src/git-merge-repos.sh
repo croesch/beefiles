@@ -115,7 +115,7 @@ function git_merge_branches() {
   # 1. Merge all branches that exist in both repos
   for new_branch in `git_branches_in_both "${1}" "origin" "${MERGE_REMOTE}"`
   do
-    if [[ ! "${new_branches}" =~ "refs/heads/${new_branch}" ]]
+    if [[ ! "${local_branches}" =~ "refs/heads/${new_branch}" ]]
     then
       git -C "${RESULT_REPO}" branch "${new_branch}" "refs/remotes/origin/${new_branch}" || ask_user "Branching ${new_branch} based on 'refs/remotes/origin/${new_branch}' failed, make sure branch exists." || return 2
     fi

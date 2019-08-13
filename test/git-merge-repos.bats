@@ -237,6 +237,26 @@ teardown() {
   [ "${files_on_branch}" = "one"$'\n'"twenty/three"$'\n'"twenty/two"$'\n'"two" ]
 }
 
+@test "${SUT}: merge branches - should skip branching branches that already exist locally" {
+  init_git1
+  init_git2
+
+  git clone -q "${GIT1}" "${WORK}/target"
+  git -C "${WORK}/target" remote add git2 "${GIT2}"
+  git -C "${WORK}/target" fetch -q git2 2> /dev/null
+  # make sure branch exists locally
+  git -C "${WORK}/target" checkout -b master refs/remotes/origin/master
+
+  run git_merge_branches "${WORK}" "${GIT2}"
+
+  [ "$status" -eq 0 ]
+
+  git -C "${WORK}/target" checkout -q master
+  files_on_branch="$(git -C "${WORK}/target" ls-files)"
+
+  [ "${files_on_branch}" = "one"$'\n'"twenty/three"$'\n'"twenty/two"$'\n'"two" ]
+}
+
 @test "${SUT}: merge tags - should merge all duplicate tags" {
   init_git1
   init_git2
