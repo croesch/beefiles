@@ -141,6 +141,7 @@ function git_utag() {
   git -C "${repo}" tag "${tag}" "${commit_id}"
   if [ ! $? -eq 0 ]
   then
+    # TODO add test for this branch
     git -C "${repo}" fetch "${remote}" "${commit_id}"
     git -C "${repo}" tag "${tag}" "${commit_id}" || return 1
   fi
@@ -179,6 +180,7 @@ function git_merge_tags() {
     merge_id="${merge_tags[refs/tags/$tag]}"
     if [ "${origin_id}" = "${merge_id}" ]
     then
+      # TODO add tag for this branch
       echo "Tags ${tag} point both to '${origin_id}'."
       continue
     fi
